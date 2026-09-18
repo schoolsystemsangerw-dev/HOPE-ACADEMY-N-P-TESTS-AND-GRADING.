@@ -133,25 +133,25 @@
         </div>
       </div>
 
-      <!-- User Session Actions -->
-      <div class="flex items-center space-x-3" id="authNavButtons">
-        <button onclick="switchTab('login')" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
-          <i class="fa-solid fa-right-to-bracket me-1"></i> Login
-        </button>
-        <button onclick="switchTab('register')" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-brand-600 to-accent-purple hover:opacity-90 text-white shadow-md shadow-brand-600/30 transition">
-          <i class="fa-solid fa-user-plus me-1"></i> Register Teacher
-        </button>
-      </div>
-
-      <div class="hidden items-center space-x-3" id="userProfileNav">
-        <div class="text-right">
-          <div id="navUserName" class="text-xs font-bold text-white">---</div>
-          <div id="navUserRole" class="text-[10px] text-brand-100 font-mono">Teacher</div>
+     <!-- User Session Actions -->
+        <div class="flex items-center space-x-3" id="authNavButtons">
+          <button onclick="switchTab('login')" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+            <i class="fa-solid fa-right-to-bracket me-1"></i> Login
+          </button>
+          <button onclick="switchTab('register')" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-brand-600 to-accent-purple text-white shadow-lg transition">
+            <i class="fa-solid fa-user-plus me-1"></i> Register Teacher
+          </button>
         </div>
-        <button onclick="logout()" class="w-8 h-8 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 flex items-center justify-center transition" title="Logout">
-          <i class="fa-solid fa-power-off text-xs"></i>
-        </button>
-      </div>
+
+        <div class="hidden items-center space-x-3" id="userProfileNav">
+          <div class="text-right">
+            <div id="navUserName" class="text-xs font-bold text-white">---</div>
+            <div id="navUserRole" class="text-[10px] text-brand-100 font-mono">Teacher</div>
+          </div>
+          <button onclick="logout()" class="w-8 h-8 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 flex items-center justify-center transition">
+            <i class="fa-solid fa-power-off text-xs"></i>
+          </button>
+        </div>
     </div>
 
     <!-- MOVING TEXT / MARQUEE BANNER -->
@@ -203,7 +203,7 @@
       </form>
 
       <div class="mt-6 pt-4 border-t border-slate-800 text-center">
-        <p class="text-xs text-slate-400">Don't have a teacher profile? <a href="#" onclick="switchTab('register')" class="text-brand-100 font-semibold hover:underline">Register Account</a></p>
+      <p class="text-xs text-slate-400">Don't have a teacher profile? <a href="javascript:void(0)" onclick="switchTab('register')" class="text-brand-100 font-semibold hover:underline">Register Account</a></p>
       </div>
     </section>
 
@@ -588,7 +588,7 @@
     // 1. SUPABASE CLIENT INITIALIZATION WITH PRE-CONFIGURED CREDENTIALS
     const SUPABASE_URL = 'https://fmqtpegmctmflpaawwsw.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_pv3VLmRa1Dcf9CIAjnTVwQ_D5iYqSci';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // Local State Management
     let currentUser = null;
