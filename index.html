@@ -3,940 +3,253 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hope Academy - Tests & Grading System</title>
-  
-  <!-- Tailwind CSS CDN -->
+  <title>Hope Academy - Head Teacher Management Portal</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- FontAwesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Google Fonts: Inter & Outfit -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <!-- Supabase JS Client v2 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- Chart.js for Performance Analytics -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-            heading: ['Outfit', 'sans-serif'],
-          },
-          colors: {
-            brand: {
-              50: '#eef2ff',
-              100: '#e0e7ff',
-              500: '#6366f1',
-              600: '#4f46e5',
-              700: '#4338ca',
-              800: '#3730a3',
-              900: '#312e81',
-            },
-            accent: {
-              emerald: '#10b981',
-              amber: '#f59e0b',
-              rose: '#f43f5e',
-              purple: '#8b5cf6'
-            }
-          },
-          animation: {
-            'marquee': 'marquee 25s linear infinite',
-            'pulse-glow': 'pulseGlow 3s ease-in-out infinite',
-            'float': 'float 4s ease-in-out infinite'
-          },
-          keyframes: {
-            marquee: {
-              '0%': { transform: 'translateX(100%)' },
-              '100%': { transform: 'translateX(-100%)' }
-            },
-            pulseGlow: {
-              '0%, 100%': { opacity: '0.6', filter: 'drop-shadow(0 0 15px rgba(99, 102, 241, 0.4))' },
-              '50%': { opacity: '1', filter: 'drop-shadow(0 0 25px rgba(139, 92, 246, 0.7))' }
-            },
-            float: {
-              '0%, 100%': { transform: 'translateY(0px)' },
-              '50%': { transform: 'translateY(-6px)' }
-            }
-          }
-        }
-      }
-    }
-  </script>
-
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    /* Custom Scrollbars */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #6366f1; }
-
-    /* Glassmorphism Classes */
     .glass-card {
-      background: rgba(30, 41, 59, 0.7);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .glass-nav {
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    .neon-border {
-      box-shadow: 0 0 15px rgba(99, 102, 241, 0.3), inset 0 0 15px rgba(99, 102, 241, 0.15);
-    }
-    .text-gradient {
-      background: linear-gradient(135deg, #a5b4fc 0%, #c084fc 50%, #f472b6 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(12px);
     }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col justify-between selection:bg-brand-500 selection:text-white">
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans flex flex-col justify-between">
 
-  <!-- TOP HEADER SECTION -->
-  <header class="sticky top-0 z-50 glass-nav shadow-2xl">
-    <!-- Location & Contact Bar -->
-    <div class="bg-slate-900/90 text-xs py-1.5 px-4 border-b border-slate-800/80 flex flex-wrap justify-between items-center text-slate-400">
-      <div class="flex items-center space-x-4">
-        <span class="flex items-center space-x-1 text-brand-100 font-medium">
-          <i class="fa-solid me-1.5 fa-location-dot text-rose-500"></i> East, Nyagatare, Mukama, Rugarama
-        </span>
-        <span class="hidden md:inline-block text-slate-600">|</span>
-        <span class="hidden md:flex items-center space-x-1">
-          <i class="fa-solid fa-church me-1 text-amber-400"></i> EAR PARISH MUKAMA
-        </span>
-      </div>
+  <!-- TOP NAVIGATION BAR -->
+  <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
       <div class="flex items-center space-x-3">
-        <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> Live System
-        </span>
-        <span id="currentTime" class="font-mono text-slate-300">--:--:--</span>
-      </div>
-    </div>
-
-    <!-- Main Navigation Header -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
-      <div class="flex items-center space-x-3">
-        <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-brand-600 via-accent-purple to-pink-500 p-0.5 shadow-lg shadow-brand-500/20">
-          <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-            <i class="fa-solid fa-graduation-cap text-xl text-gradient"></i>
-          </div>
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-lg">
+          <i class="fa-solid fa-graduation-cap text-lg"></i>
         </div>
         <div>
-          <h1 class="font-heading font-extrabold text-lg sm:text-xl tracking-tight text-white leading-none">
-            HOPE ACADEMY <span class="text-xs font-normal text-brand-100 bg-brand-500/20 px-2 py-0.5 rounded border border-brand-500/30">NURSERY & PRIMARY</span>
-          </h1>
-          <p class="text-xs text-slate-400 mt-0.5 font-medium">Weekly Assessment & Academic Performance Tracking</p>
+          <h1 class="font-bold text-white tracking-wide text-sm md:text-base">HOPE ACADEMY <span class="text-xs font-normal text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-full ml-1">NURSERY & PRIMARY</span></h1>
+          <p class="text-[11px] text-slate-400">Head Teacher Management & Performance Portal</p>
         </div>
       </div>
 
-     <!-- User Session Actions -->
-        <div class="flex items-center space-x-3" id="authNavButtons">
-          <button onclick="switchTab('login')" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
-            <i class="fa-solid fa-right-to-bracket me-1"></i> Login
-          </button>
-          <button onclick="switchTab('register')" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-brand-600 to-accent-purple text-white shadow-lg transition">
-            <i class="fa-solid fa-user-plus me-1"></i> Register Teacher
-          </button>
-        </div>
-
-        <div class="hidden items-center space-x-3" id="userProfileNav">
-          <div class="text-right">
-            <div id="navUserName" class="text-xs font-bold text-white">---</div>
-            <div id="navUserRole" class="text-[10px] text-brand-100 font-mono">Teacher</div>
-          </div>
-          <button onclick="logout()" class="w-8 h-8 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 flex items-center justify-center transition">
-            <i class="fa-solid fa-power-off text-xs"></i>
-          </button>
-        </div>
-    </div>
-
-    <!-- MOVING TEXT / MARQUEE BANNER -->
-    <div class="bg-gradient-to-r from-slate-900 via-brand-900/40 to-slate-900 border-y border-brand-500/20 py-2 overflow-hidden relative shadow-inner">
-      <div class="whitespace-nowrap inline-block animate-marquee font-heading font-medium text-xs text-brand-100 tracking-wide">
-        <i class="fa-solid fa-star text-amber-400 me-2"></i>
-        <span>WELCOME TO HOPE ACADEMY NURSERY AND PRIMARY SCHOOL TESTS AND GRADING SYSTEM, One Team, One Vision: Empowering Educators, Elevating Every Learner</span>
-        <i class="fa-solid fa-star text-amber-400 mx-6"></i>
-        <span>WEEKLY MARKS ENTRY & AUTOMATED CLASS POSITIONING IS NOW ACTIVE FOR P5 & P6</span>
-        <i class="fa-solid fa-star text-amber-400 mx-6"></i>
+      <div class="flex items-center space-x-3">
+        <a href="teacher.html" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-chalkboard-user"></i> Switch to Teacher Portal
+        </a>
       </div>
     </div>
   </header>
 
-  <!-- MAIN VIEWPORT CONTAINER -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 py-8 w-full space-y-8">
 
-    <!-- VIEW 1: LOGIN TAB -->
-    <section id="loginView" class="max-w-md mx-auto glass-card p-8 rounded-2xl shadow-2xl relative overflow-hidden border border-slate-700/60">
-      <div class="absolute -top-10 -right-10 w-32 h-32 bg-brand-500/20 rounded-full blur-2xl"></div>
-      <div class="text-center mb-6">
-        <div class="w-14 h-14 rounded-2xl bg-brand-600/20 text-brand-100 border border-brand-500/30 mx-auto flex items-center justify-center mb-3">
-          <i class="fa-solid fa-shield-halved text-2xl"></i>
+    <!-- LOCATION BANNER -->
+    <div class="flex items-center justify-between bg-slate-900/60 p-3 px-4 rounded-xl border border-slate-800 text-xs text-slate-400">
+      <span><i class="fa-solid fa-location-dot text-rose-500 me-2"></i>East, Nyagatare, Mukama, Rugarama</span>
+      <span class="text-emerald-400 font-mono"><i class="fa-solid fa-circle text-[8px] me-1"></i>Head Teacher Active</span>
+    </div>
+
+    <!-- SECTION 1: REGISTER NEW STUDENT -->
+    <section class="glass-card p-6 rounded-2xl border border-slate-800/80 shadow-2xl">
+      <div class="flex items-center space-x-3 mb-6">
+        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+          <i class="fa-solid fa-user-plus text-sm"></i>
         </div>
-        <h2 class="font-heading font-bold text-2xl text-white">System Portal Access</h2>
-        <p class="text-xs text-slate-400 mt-1">Sign in with your registered account credentials</p>
+        <div>
+          <h2 class="text-base font-bold text-white">Register New Student</h2>
+          <p class="text-xs text-slate-400">Add new learners to the central school enrollment database</p>
+        </div>
       </div>
 
-      <form id="loginForm" class="space-y-4">
+      <form id="addStudentForm" onsubmit="handleRegisterStudent(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Email Address</label>
-          <div class="relative">
-            <i class="fa-solid fa-envelope absolute left-3 top-3 text-slate-500 text-xs"></i>
-            <input type="email" id="loginEmail" required placeholder="teacher@hopeacademy.rw" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl py-2.5 pl-9 pr-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500">
-          </div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Student Code</label>
+          <input type="text" id="newStudentCode" required placeholder="HA-P6-006" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition" />
         </div>
-
         <div>
-          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Password</label>
-          <div class="relative">
-            <i class="fa-solid fa-lock absolute left-3 top-3 text-slate-500 text-xs"></i>
-            <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl py-2.5 pl-9 pr-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500">
-          </div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Full Name</label>
+          <input type="text" id="newStudentName" required placeholder="Full Name" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition" />
         </div>
-
-        <button type="submit" id="btnLogin" class="w-full py-3 bg-gradient-to-r from-brand-600 via-indigo-600 to-accent-purple text-white text-xs font-bold rounded-xl shadow-lg shadow-brand-600/30 hover:opacity-95 transition-all transform hover:-translate-y-0.5">
-          LOG IN TO DASHBOARD
-        </button>
-      </form>
-
-      <div class="mt-6 pt-4 border-t border-slate-800 text-center">
-      <p class="text-xs text-slate-400">Don't have a teacher profile? <a href="javascript:void(0)" onclick="switchTab('register')" class="text-brand-100 font-semibold hover:underline">Register Account</a></p>
-      </div>
-    </section>
-
-    <!-- VIEW 2: TEACHER REGISTRATION TAB -->
-    <section id="registerView" class="max-w-xl mx-auto glass-card p-8 rounded-2xl shadow-2xl relative hidden border border-slate-700/60">
-      <div class="text-center mb-6">
-        <div class="w-14 h-14 rounded-2xl bg-accent-purple/20 text-accent-purple border border-accent-purple/30 mx-auto flex items-center justify-center mb-3">
-          <i class="fa-solid fa-user-gear text-2xl"></i>
-        </div>
-        <h2 class="font-heading font-bold text-2xl text-white">Teacher Registration</h2>
-        <p class="text-xs text-slate-400 mt-1">Setup profile, multi-class & subject teaching allocations</p>
-      </div>
-
-      <form id="registerForm" class="space-y-4">
         <div>
-          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Full Teacher Name</label>
-          <input type="text" id="regFullName" required placeholder="e.g. Teacher Uwimana Marie" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Allocated Class</label>
+          <select id="newStudentClass" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+            <option value="2">Primary 5 (P5)</option>
+            <option value="3">Primary 6 (P6)</option>
+          </select>
         </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Email Address</label>
-            <input type="email" id="regEmail" required placeholder="name@hopeacademy.rw" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Password</label>
-            <input type="password" id="regPassword" required minlength="6" placeholder="Min 6 characters" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
-          </div>
+        <div class="md:col-span-3 pt-2">
+          <button type="submit" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-sm transition shadow-lg flex items-center gap-2">
+            <i class="fa-solid fa-plus text-xs"></i> Save Student to Roster
+          </button>
         </div>
-
-        <!-- Multi-Select Classes -->
-        <div class="p-4 bg-slate-900/90 rounded-xl border border-slate-800">
-          <label class="block text-xs font-bold text-brand-100 uppercase tracking-wider mb-2">
-            <i class="fa-solid fa-chalkboard-user me-1"></i> Select Allocated Classes (Multi-Select):
-          </label>
-          <div class="grid grid-cols-2 gap-2">
-            <label class="flex items-center space-x-2 bg-slate-800/60 p-2 rounded-lg border border-slate-700 cursor-pointer hover:bg-slate-800 transition">
-              <input type="checkbox" name="classes" value="1" class="rounded text-brand-600 focus:ring-0">
-              <span class="text-xs font-medium text-slate-200">Primary 5 (P5)</span>
-            </label>
-            <label class="flex items-center space-x-2 bg-slate-800/60 p-2 rounded-lg border border-slate-700 cursor-pointer hover:bg-slate-800 transition">
-              <input type="checkbox" name="classes" value="2" class="rounded text-brand-600 focus:ring-0" checked>
-              <span class="text-xs font-medium text-slate-200">Primary 6 (P6)</span>
-            </label>
-          </div>
-        </div>
-
-        <!-- Multi-Select Subjects -->
-        <div class="p-4 bg-slate-900/90 rounded-xl border border-slate-800">
-          <label class="block text-xs font-bold text-accent-purple uppercase tracking-wider mb-2">
-            <i class="fa-solid fa-book-open me-1"></i> Select Allocated Subjects (Multi-Select):
-          </label>
-          <div class="grid grid-cols-2 gap-2">
-            <label class="flex items-center space-x-2 bg-slate-800/60 p-2 rounded-lg border border-slate-700 cursor-pointer hover:bg-slate-800 transition">
-              <input type="checkbox" name="subjects" value="1" class="rounded text-accent-purple focus:ring-0" checked>
-              <span class="text-xs font-medium text-slate-200">Mathematics</span>
-            </label>
-            <label class="flex items-center space-x-2 bg-slate-800/60 p-2 rounded-lg border border-slate-700 cursor-pointer hover:bg-slate-800 transition">
-              <input type="checkbox" name="subjects" value="2" class="rounded text-accent-purple focus:ring-0">
-              <span class="text-xs font-medium text-slate-200">English</span>
-            </label>
-            <label class="flex items-center space-x-2 bg-slate-800/60 p-2 rounded-lg border border-slate-700 cursor-pointer hover:bg-slate-800 transition">
-              <input type="checkbox" name="subjects" value="3" class="rounded text-accent-purple focus:ring-0">
-              <span class="text-xs font-medium text-slate-200">Science & Tech (SET)</span>
-            </label>
-            <label class="flex items-center space-x-2 bg-slate-800/60 p-2 rounded-lg border border-slate-700 cursor-pointer hover:bg-slate-800 transition">
-              <input type="checkbox" name="subjects" value="4" class="rounded text-accent-purple focus:ring-0">
-              <span class="text-xs font-medium text-slate-200">Social Studies (SST)</span>
-            </label>
-          </div>
-        </div>
-
-        <button type="submit" id="btnRegister" class="w-full py-3 bg-gradient-to-r from-accent-purple to-pink-600 text-white text-xs font-bold rounded-xl shadow-lg shadow-purple-600/30 hover:opacity-95 transition-all">
-          COMPLETE REGISTRATION
-        </button>
       </form>
     </section>
 
-    <!-- VIEW 3: MAIN SYSTEM DASHBOARD -->
-    <section id="dashboardView" class="space-y-6 hidden">
-
-      <!-- Navigation Dashboard Tabs -->
-      <div class="flex flex-wrap items-center justify-between gap-4 glass-card p-3 rounded-2xl border border-slate-800">
-        <div class="flex items-center space-x-2">
-          <button id="tabHeadTeacherBtn" onclick="switchDashboardRole('head_teacher')" class="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 bg-brand-600 text-white shadow-lg transition">
-            <i class="fa-solid fa-user-shield"></i> Head Teacher Portal
-          </button>
-          <button id="tabTeacherBtn" onclick="switchDashboardRole('teacher')" class="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 bg-slate-800 text-slate-300 hover:bg-slate-700 transition">
-            <i class="fa-solid fa-pen-to-square"></i> Teacher Mark Entry Grid
-          </button>
-          <button id="tabAnalyticsBtn" onclick="switchDashboardRole('analytics')" class="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 bg-slate-800 text-slate-300 hover:bg-slate-700 transition">
-            <i class="fa-solid fa-chart-line"></i> Class Trends & Ranks
-          </button>
-        </div>
-
-        <div class="flex items-center space-x-2 text-xs font-medium text-slate-400">
-          <span class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">Academic Year: <b class="text-white">2026</b></span>
-          <span class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">Term: <b class="text-amber-400">Term 1</b></span>
-        </div>
-      </div>
-
-      <!-- PANEL A: HEAD TEACHER PORTAL (Student Roster Management) -->
-      <div id="panelHeadTeacher" class="space-y-6">
-        
-        <!-- Summary Stats Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div class="glass-card p-5 rounded-2xl border border-slate-800 relative overflow-hidden">
-            <div class="flex justify-between items-start">
-              <div>
-                <p class="text-xs font-bold uppercase text-slate-400 tracking-wider">Total Enrolled</p>
-                <h3 class="font-heading font-extrabold text-3xl text-white mt-1" id="statTotalStudents">12</h3>
-              </div>
-              <div class="w-10 h-10 rounded-xl bg-brand-500/20 text-brand-100 flex items-center justify-center">
-                <i class="fa-solid fa-users text-lg"></i>
-              </div>
-            </div>
-            <p class="text-[11px] text-emerald-400 mt-3 font-medium flex items-center gap-1">
-              <i class="fa-solid fa-circle-check"></i> Registered in System Database
-            </p>
+    <!-- SECTION 2: ACADEMIC MARKS OVERVIEW & PDF EXPORT -->
+    <section class="glass-card p-6 rounded-2xl border border-slate-800/80 shadow-2xl">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+            <i class="fa-solid fa-chart-line text-sm"></i>
           </div>
-
-          <div class="glass-card p-5 rounded-2xl border border-slate-800 relative overflow-hidden">
-            <div class="flex justify-between items-start">
-              <div>
-                <p class="text-xs font-bold uppercase text-slate-400 tracking-wider">P6 Target Class</p>
-                <h3 class="font-heading font-extrabold text-3xl text-emerald-400 mt-1" id="statP6Students">8</h3>
-              </div>
-              <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                <i class="fa-solid fa-award text-lg"></i>
-              </div>
-            </div>
-            <p class="text-[11px] text-slate-400 mt-3">First National P6 Cohort</p>
-          </div>
-
-          <div class="glass-card p-5 rounded-2xl border border-slate-800 relative overflow-hidden">
-            <div class="flex justify-between items-start">
-              <div>
-                <p class="text-xs font-bold uppercase text-slate-400 tracking-wider">Active Teachers</p>
-                <h3 class="font-heading font-extrabold text-3xl text-accent-purple mt-1" id="statTotalTeachers">4</h3>
-              </div>
-              <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-accent-purple flex items-center justify-center">
-                <i class="fa-solid fa-chalkboard-teacher text-lg"></i>
-              </div>
-            </div>
-            <p class="text-[11px] text-slate-400 mt-3">Assigned to Subjects</p>
-          </div>
-
-          <div class="glass-card p-5 rounded-2xl border border-slate-800 relative overflow-hidden">
-            <div class="flex justify-between items-start">
-              <div>
-                <p class="text-xs font-bold uppercase text-slate-400 tracking-wider">Overall Average</p>
-                <h3 class="font-heading font-extrabold text-3xl text-amber-400 mt-1">78.4%</h3>
-              </div>
-              <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
-                <i class="fa-solid fa-chart-pie text-lg"></i>
-              </div>
-            </div>
-            <p class="text-[11px] text-emerald-400 mt-3 font-medium flex items-center gap-1">
-              <i class="fa-solid fa-arrow-trend-up"></i> +3.2% vs Previous Week
-            </p>
-          </div>
-        </div>
-
-        <!-- Add Student Form & Existing Roster -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- Add Student Box -->
-          <div class="glass-card p-6 rounded-2xl border border-slate-800 space-y-4">
-            <div class="flex items-center space-x-2 border-b border-slate-800 pb-3">
-              <i class="fa-solid fa-user-plus text-brand-100"></i>
-              <h3 class="font-heading font-bold text-base text-white">Enroll New Student</h3>
-            </div>
-            <p class="text-xs text-slate-400">Head Teacher space to add or correct official student full names into the database roster.</p>
-
-            <form id="addStudentForm" class="space-y-3">
-              <div>
-                <label class="block text-xs font-medium text-slate-300 mb-1">Student Full Name</label>
-                <input type="text" id="studentFullName" required placeholder="e.g. Mugisha Alain" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
-              </div>
-
-              <div>
-                <label class="block text-xs font-medium text-slate-300 mb-1">Class Level</label>
-                <select id="studentClassSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
-                  <option value="2">Primary 6 (P6)</option>
-                  <option value="1">Primary 5 (P5)</option>
-                </select>
-              </div>
-
-              <div>
-                <label class="block text-xs font-medium text-slate-300 mb-1">Assigned Student Code / ID</label>
-                <input type="text" id="studentCode" readonly value="HA-P6-009" class="w-full bg-slate-800/80 border border-slate-700 rounded-xl p-2.5 text-xs text-brand-100 font-mono font-bold">
-              </div>
-
-              <button type="submit" id="btnAddStudent" class="w-full py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl shadow-md transition">
-                SAVE STUDENT TO ROSTER
-              </button>
-            </form>
-          </div>
-
-          <!-- Roster Table Display -->
-          <div class="lg:col-span-2 glass-card p-6 rounded-2xl border border-slate-800 space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-              <div class="flex items-center space-x-2">
-                <i class="fa-solid fa-address-book text-accent-purple"></i>
-                <h3 class="font-heading font-bold text-base text-white">Official School Student Roster</h3>
-              </div>
-              <span class="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full border border-slate-700" id="rosterCount">Total: 12</span>
-            </div>
-
-            <div class="overflow-x-auto">
-              <table class="w-full text-left text-xs">
-                <thead>
-                  <tr class="text-slate-400 border-b border-slate-800 uppercase text-[10px] tracking-wider">
-                    <th class="pb-2">Code ID</th>
-                    <th class="pb-2">Student Full Name</th>
-                    <th class="pb-2">Class</th>
-                    <th class="pb-2 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="rosterTableBody" class="divide-y divide-slate-800/60 text-slate-200">
-                  <!-- Dynamic JS content rendered here -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- PANEL B: TEACHER MARK ENTRY GRID -->
-      <div id="panelTeacher" class="space-y-6 hidden">
-        
-        <!-- Selection Ribbon -->
-        <div class="glass-card p-5 rounded-2xl border border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Select Target Class</label>
-            <select id="gridClassSelect" onchange="loadMarkEntryGrid()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:border-brand-500">
-              <option value="2">Primary 6 (P6)</option>
-              <option value="1">Primary 5 (P5)</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Select Subject</label>
-            <select id="gridSubjectSelect" onchange="loadMarkEntryGrid()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:border-brand-500">
-              <option value="1">Mathematics</option>
-              <option value="2">English</option>
-              <option value="3">Science & Tech (SET)</option>
-              <option value="4">Social Studies (SST)</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Select Assessment Week</label>
-            <select id="gridWeekSelect" onchange="loadMarkEntryGrid()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-amber-400 font-bold focus:border-brand-500">
-              <option value="1">Week 1 Test</option>
-              <option value="2">Week 2 Test</option>
-              <option value="3" selected>Week 3 Test (Current)</option>
-              <option value="4">Week 4 Test</option>
-            </select>
+            <h2 class="text-base font-bold text-white">Weekly Performance Summary & Rankings</h2>
+            <p class="text-xs text-slate-400">View compiled subject scores entered by teachers</p>
           </div>
         </div>
 
-        <!-- Interactive Grid Sheet -->
-        <div class="glass-card p-6 rounded-2xl border border-slate-800 space-y-4">
-          <div class="flex flex-wrap justify-between items-center gap-2 border-b border-slate-800 pb-3">
-            <div>
-              <h3 class="font-heading font-bold text-lg text-white" id="gridTitle">P6 - Mathematics Mark Sheet</h3>
-              <p class="text-xs text-slate-400">Enter marks obtained out of 100 max score per student.</p>
-            </div>
-            <button onclick="saveAllMarks()" class="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:opacity-90 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-600/20 flex items-center gap-2 transition">
-              <i class="fa-solid fa-floppy-disk"></i> SAVE ALL MARKS
-            </button>
-          </div>
+        <div class="flex items-center gap-3">
+          <select id="filterClassOverview" onchange="renderHeadTeacherOverview()" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+            <option value="2">Primary 5 (P5)</option>
+            <option value="3" selected>Primary 6 (P6)</option>
+          </select>
 
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
-              <thead>
-                <tr class="text-slate-400 border-b border-slate-800 uppercase text-[10px] tracking-wider">
-                  <th class="py-3 px-2">Student ID</th>
-                  <th class="py-3 px-2">Student Name</th>
-                  <th class="py-3 px-2 text-center w-32">Test Score (/100)</th>
-                  <th class="py-3 px-2 text-center">Grade</th>
-                  <th class="py-3 px-2 text-center">Week Position</th>
-                  <th class="py-3 px-2 text-center">Weekly Trend</th>
-                </tr>
-              </thead>
-              <tbody id="markGridTableBody" class="divide-y divide-slate-800/60">
-                <!-- Dynamic student score rows populated here -->
-              </tbody>
-            </table>
-          </div>
+          <button onclick="exportPositionsPDF()" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold rounded-xl text-xs transition shadow-lg flex items-center gap-2">
+            <i class="fa-solid fa-file-pdf"></i> Export Positions PDF
+          </button>
         </div>
-
       </div>
 
-      <!-- PANEL C: CLASS ANALYTICS & TRENDS -->
-      <div id="panelAnalytics" class="space-y-6 hidden">
-        
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- Chart 1: Subject Averages -->
-          <div class="glass-card p-6 rounded-2xl border border-slate-800 space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-              <h3 class="font-heading font-bold text-base text-white">Subject Performance Averages (P6)</h3>
-              <span class="text-xs text-brand-100 bg-brand-500/10 px-2.5 py-1 rounded-lg border border-brand-500/20">Class Avg: 78.4%</span>
-            </div>
-            <div class="h-64 relative">
-              <canvas id="chartSubjectAverages"></canvas>
-            </div>
-          </div>
-
-          <!-- Chart 2: Weekly Progression Trend -->
-          <div class="glass-card p-6 rounded-2xl border border-slate-800 space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-              <h3 class="font-heading font-bold text-base text-white">Weekly Class Progression Trend</h3>
-              <span class="text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">Improving</span>
-            </div>
-            <div class="h-64 relative">
-              <canvas id="chartWeeklyTrends"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <!-- Top Performing Students Leaderboard -->
-        <div class="glass-card p-6 rounded-2xl border border-slate-800 space-y-4">
-          <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-            <div class="flex items-center space-x-2">
-              <i class="fa-solid fa-trophy text-amber-400 text-lg"></i>
-              <h3 class="font-heading font-bold text-base text-white">P6 Top Achievers Leaderboard</h3>
-            </div>
-            <span class="text-xs text-slate-400">Based on Week 3 Aggregate Marks</span>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="leaderboardCards">
-            <!-- Dynamic Leaderboard Cards -->
-          </div>
-        </div>
-
+      <!-- MARKS TABLE -->
+      <div class="overflow-x-auto rounded-xl border border-slate-800">
+        <table class="w-full text-sm text-left text-slate-300">
+          <thead class="text-xs uppercase bg-slate-900/90 text-slate-400 border-b border-slate-800">
+            <tr>
+              <th class="px-4 py-3">Position</th>
+              <th class="px-4 py-3">Student Code</th>
+              <th class="px-4 py-3">Full Name</th>
+              <th class="px-4 py-3 text-center">Total Score</th>
+              <th class="px-4 py-3 text-center">Grade</th>
+            </tr>
+          </thead>
+          <tbody id="headTeacherOverviewTableBody" class="divide-y divide-slate-800/60 bg-slate-950/40">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
       </div>
-
     </section>
 
   </main>
 
-  <!-- SYSTEM FOOTER -->
-  <footer class="bg-slate-950 border-t border-slate-800/80 py-8 px-4 sm:px-6 lg:px-8 mt-12 relative overflow-hidden">
-    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-      
-      <!-- Footer Info Column 1 -->
-      <div class="text-center md:text-left space-y-2">
-        <div class="flex items-center justify-center md:justify-start space-x-2">
-          <span class="font-heading font-bold text-white text-base">HOPE ACADEMY NURSERY AND PRIMARY SCHOOL</span>
-        </div>
-        <p class="text-xs text-slate-400 max-w-md">
-          Empowering learners through structured weekly assessment, real-time mark tracking, and automatic position grading.
-        </p>
-        <p class="text-xs font-semibold text-amber-400 flex items-center justify-center md:justify-start gap-1">
-          <i class="fa-solid fa-church text-xs"></i> EAR PARISH MUKAMA
-        </p>
-      </div>
-
-      <!-- Footer Info Column 2: System Developer Credits -->
-      <div class="text-center md:text-right space-y-2 glass-card p-4 rounded-xl border border-slate-800">
-        <p class="text-[11px] font-mono text-slate-400 uppercase tracking-widest">Architected & Engineered By</p>
-        <p class="text-xs font-bold text-brand-100 flex items-center justify-center md:justify-end gap-1.5">
-          <i class="fa-solid fa-code text-accent-purple"></i> school-systems-rw
-        </p>
-        <a href="mailto:schoolsystems.ange.rw@gmail.com" class="text-xs text-brand-100 hover:text-white underline font-mono flex items-center justify-center md:justify-end gap-1 transition">
-          <i class="fa-solid fa-envelope text-xs"></i> schoolsystems.ange.rw@gmail.com
-        </a>
-      </div>
-
-    </div>
-
-    <div class="max-w-7xl mx-auto mt-6 pt-4 border-t border-slate-900 flex flex-col sm:flex-row justify-between items-center text-[11px] text-slate-500">
-      <p>© 2026 Hope Academy Nursery & Primary School. All rights reserved.</p>
-      <p class="mt-2 sm:mt-0">Location: East, Nyagatare, Mukama, Rugarama</p>
-    </div>
+  <!-- FOOTER -->
+  <footer class="border-t border-slate-800/80 bg-slate-950 py-4 text-center text-xs text-slate-500">
+    <p>&copy; 2026 Hope Academy Nursery & Primary School. All rights reserved.</p>
   </footer>
 
   <!-- SYSTEM JAVASCRIPT LOGIC -->
   <script>
-    // 1. SUPABASE CLIENT INITIALIZATION WITH PRE-CONFIGURED CREDENTIALS
+    // 1. SUPABASE CLIENT INITIALIZATION
     const SUPABASE_URL = 'https://fmqtpegmctmflpaawwsw.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_pv3VLmRa1Dcf9CIAjnTVwQ_D5iYqSci';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Local State Management
-    let currentUser = null;
+    // Initial Local Roster State Fallback
     let localStudents = [
-      { id: 1, student_code: 'HA-P6-001', full_name: 'Mugisha Alain', class_id: 2 },
-      { id: 2, student_code: 'HA-P6-002', full_name: 'Uwase Clarisse', class_id: 2 },
-      { id: 3, student_code: 'HA-P6-003', full_name: 'Iradukunda Eric', class_id: 2 },
-      { id: 4, student_code: 'HA-P6-004', full_name: 'Manzi Kevin', class_id: 2 },
-      { id: 5, student_code: 'HA-P6-005', full_name: 'Ingabire Divine', class_id: 2 },
-      { id: 6, student_code: 'HA-P6-006', full_name: 'Nshimyumuremyi Jean', class_id: 2 },
-      { id: 7, student_code: 'HA-P6-007', full_name: 'Kwizera Patrick', class_id: 2 },
-      { id: 8, student_code: 'HA-P6-008', full_name: 'Mutoni Sandra', class_id: 2 },
-      { id: 9, student_code: 'HA-P5-001', full_name: 'Gisa Brian', class_id: 1 },
-      { id: 10, student_code: 'HA-P5-002', full_name: 'Keza Grace', class_id: 1 },
-      { id: 11, student_code: 'HA-P5-003', full_name: 'Cyusa David', class_id: 1 },
-      { id: 12, student_code: 'HA-P5-004', full_name: 'Umutoni Marie', class_id: 1 }
+      { id: 1, student_code: 'HA-P6-001', full_name: 'Mugisha Alain', class_id: 3, score: 88 },
+      { id: 2, student_code: 'HA-P6-002', full_name: 'Uwase Clarisse', class_id: 3, score: 94 },
+      { id: 3, student_code: 'HA-P6-003', full_name: 'Iradukunda Eric', class_id: 3, score: 72 },
+      { id: 4, student_code: 'HA-P6-004', full_name: 'Manzi Kevin', class_id: 3, score: 81 },
+      { id: 5, student_code: 'HA-P6-005', full_name: 'Ingabire Divine', class_id: 3, score: 65 }
     ];
 
-    let localMarks = {
-      // Key: "studentId_subjectId_week"
-      '1_1_3': 88, '2_1_3': 94, '3_1_3': 76, '4_1_3': 82, '5_1_3': 90, '6_1_3': 65, '7_1_3': 71, '8_1_3': 85,
-      // Prev week (Week 2) for trend comparison
-      '1_1_2': 82, '2_1_2': 90, '3_1_2': 78, '4_1_2': 75, '5_1_2': 88, '6_1_2': 68, '7_1_2': 66, '8_1_2': 82
-    };
-
-    let subjectChartInstance = null;
-    let trendChartInstance = null;
-
-    // 2. DOM INITIALIZATION
     document.addEventListener('DOMContentLoaded', () => {
-      startClock();
-      renderRosterTable();
-      initCharts();
-      
-      // Auto login guest for immediate interactive preview
-      currentUser = {
-        name: 'Uwimana Marie Claire',
-        role: 'Head Teacher / IT Admin',
-        email: 'admin@hopeacademy.rw'
-      };
-      updateUserNav();
+      renderHeadTeacherOverview();
     });
 
-    // Live Clock Function
-    function startClock() {
-      setInterval(() => {
-        const now = new Date();
-        document.getElementById('currentTime').innerText = now.toLocaleTimeString();
-      }, 1000);
-    }
-
-    // Switch Top-Level View Tabs
-    function switchTab(tab) {
-      document.getElementById('loginView').classList.add('hidden');
-      document.getElementById('registerView').classList.add('hidden');
-      document.getElementById('dashboardView').classList.add('hidden');
-
-      if (tab === 'login') document.getElementById('loginView').classList.remove('hidden');
-      if (tab === 'register') document.getElementById('registerView').classList.remove('hidden');
-      if (tab === 'dashboard') document.getElementById('dashboardView').classList.remove('hidden');
-    }
-
-    // Switch Role Panels inside Dashboard
-    function switchDashboardRole(role) {
-      document.getElementById('panelHeadTeacher').classList.add('hidden');
-      document.getElementById('panelTeacher').classList.add('hidden');
-      document.getElementById('panelAnalytics').classList.add('hidden');
-
-      document.getElementById('tabHeadTeacherBtn').className = "px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 bg-slate-800 text-slate-300 hover:bg-slate-700 transition";
-      document.getElementById('tabTeacherBtn').className = "px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 bg-slate-800 text-slate-300 hover:bg-slate-700 transition";
-      document.getElementById('tabAnalyticsBtn').className = "px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 bg-slate-800 text-slate-300 hover:bg-slate-700 transition";
-
-      if (role === 'head_teacher') {
-        document.getElementById('panelHeadTeacher').classList.remove('hidden');
-        document.getElementById('tabHeadTeacherBtn').className = "px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 bg-brand-600 text-white shadow-lg transition";
-      } else if (role === 'teacher') {
-        document.getElementById('panelTeacher').classList.remove('hidden');
-        document.getElementById('tabTeacherBtn').className = "px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 bg-brand-600 text-white shadow-lg transition";
-        loadMarkEntryGrid();
-      } else if (role === 'analytics') {
-        document.getElementById('panelAnalytics').classList.remove('hidden');
-        document.getElementById('tabAnalyticsBtn').className = "px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 bg-brand-600 text-white shadow-lg transition";
-        renderLeaderboard();
-      }
-    }
-
-    function updateUserNav() {
-      if (currentUser) {
-        document.getElementById('authNavButtons').classList.add('hidden');
-        document.getElementById('userProfileNav').classList.remove('hidden');
-        document.getElementById('userProfileNav').classList.add('flex');
-        document.getElementById('navUserName').innerText = currentUser.name;
-        document.getElementById('navUserRole').innerText = currentUser.role;
-        switchTab('dashboard');
-      } else {
-        document.getElementById('authNavButtons').classList.remove('hidden');
-        document.getElementById('userProfileNav').classList.add('hidden');
-        switchTab('login');
-      }
-    }
-
-    function logout() {
-      currentUser = null;
-      updateUserNav();
-    }
-
-    // 3. AUTHENTICATION HANDLERS WITH SUPABASE
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    // REGISTER NEW STUDENT TO DATABASE
+    async function handleRegisterStudent(e) {
       e.preventDefault();
-      const email = document.getElementById('loginEmail').value;
-      const password = document.getElementById('loginPassword').value;
+      const studentCode = document.getElementById('newStudentCode').value.trim();
+      const fullName = document.getElementById('newStudentName').value.trim();
+      const classId = parseInt(document.getElementById('newStudentClass').value);
 
       try {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await _supabase.from('students').insert([
+          { student_code: studentCode, full_name: fullName, class_id: classId }
+        ]);
+
         if (error) throw error;
-        
-        currentUser = {
-          name: data.user.email.split('@')[0],
-          role: 'Teacher',
-          email: data.user.email
-        };
-        updateUserNav();
+        alert("Student registered successfully to database!");
       } catch (err) {
-        alert("Supabase Login Notice: " + err.message + "\n\n(Logging into demo mode for offline preview)");
-        currentUser = { name: email.split('@')[0], role: 'Teacher', email: email };
-        updateUserNav();
+        console.warn("Saving to local state fallback:", err.message);
+        localStudents.push({
+          id: Date.now(),
+          student_code: studentCode,
+          full_name: fullName,
+          class_id: classId,
+          score: 0
+        });
+        alert("Student added to current session roster!");
       }
-    });
 
-    document.getElementById('registerForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const fullName = document.getElementById('regFullName').value;
-      const email = document.getElementById('regEmail').value;
-      const password = document.getElementById('regPassword').value;
+      document.getElementById('addStudentForm').reset();
+      renderHeadTeacherOverview();
+    }
 
-      try {
-      const { data, error } = await _supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        alert("Registration Successful! Welcome to Hope Academy.");
-        currentUser = { name: fullName, role: 'Teacher', email: email };
-        updateUserNav();
-      } catch (err) {
-        alert("Registration registered locally: " + err.message);
-        currentUser = { name: fullName, role: 'Teacher', email: email };
-        updateUserNav();
-      }
-    });
-
-    // 4. HEAD TEACHER: ROSTER MANAGEMENT
-    function renderRosterTable() {
-      const tbody = document.getElementById('rosterTableBody');
+    // RENDER OVERVIEW TABLE AND AUTOMATED CLASS POSITIONING
+    async function renderHeadTeacherOverview() {
+      const selectedClass = parseInt(document.getElementById('filterClassOverview').value);
+      const tbody = document.getElementById('headTeacherOverviewTableBody');
       tbody.innerHTML = '';
 
-      localStudents.forEach(st => {
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-800/40 transition";
-        tr.innerHTML = `
-          <td class="py-2.5 font-mono font-bold text-brand-100">${st.student_code}</td>
-          <td class="py-2.5 font-medium text-white">${st.full_name}</td>
-          <td class="py-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${st.class_id === 2 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-brand-500/10 text-brand-100 border border-brand-500/20'}">Primary ${st.class_id === 2 ? '6' : '5'}</span></td>
-          <td class="py-2.5 text-right">
-            <button onclick="deleteStudent(${st.id})" class="text-rose-400 hover:text-rose-300 p-1"><i class="fa-solid fa-trash-can"></i></button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
+      let listToRender = localStudents.filter(s => s.class_id === selectedClass);
 
-      document.getElementById('statTotalStudents').innerText = localStudents.length;
-      document.getElementById('statP6Students').innerText = localStudents.filter(s => s.class_id === 2).length;
-      document.getElementById('rosterCount').innerText = `Total: ${localStudents.length}`;
-      document.getElementById('studentCode').value = `HA-P6-00${localStudents.length + 1}`;
-    }
+      // Sort by total score descending for ranking positions
+      listToRender.sort((a, b) => (b.score || 0) - (a.score || 0));
 
-    document.getElementById('addStudentForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const name = document.getElementById('studentFullName').value;
-      const classId = parseInt(document.getElementById('studentClassSelect').value);
-      const code = document.getElementById('studentCode').value;
-
-      localStudents.push({
-        id: Date.now(),
-        student_code: code,
-        full_name: name,
-        class_id: classId
-      });
-
-      document.getElementById('studentFullName').value = '';
-      renderRosterTable();
-    });
-
-    function deleteStudent(id) {
-      if(confirm('Are you sure you want to remove this student from roster?')) {
-        localStudents = localStudents.filter(s => s.id !== id);
-        renderRosterTable();
+      if (listToRender.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-500">No students registered in this class.</td></tr>`;
+        return;
       }
-    }
 
-    // 5. TEACHER: INTERACTIVE MARK ENTRY GRID
-    function loadMarkEntryGrid() {
-      const classId = parseInt(document.getElementById('gridClassSelect').value);
-      const subjectId = parseInt(document.getElementById('gridSubjectSelect').value);
-      const weekNum = parseInt(document.getElementById('gridWeekSelect').value);
+      listToRender.forEach((st, index) => {
+        const score = st.score || 0;
+        let grade = 'C';
+        if (score >= 85) grade = 'A';
+        else if (score >= 70) grade = 'B';
+        else if (score < 50) grade = 'D';
 
-      const subjectsMap = { 1: 'Mathematics', 2: 'English', 3: 'Science & Tech (SET)', 4: 'Social Studies (SST)' };
-      document.getElementById('gridTitle').innerText = `P${classId === 2 ? '6' : '5'} - ${subjectsMap[subjectId]} Mark Sheet`;
-
-      const filteredStudents = localStudents.filter(s => s.class_id === classId);
-      const tbody = document.getElementById('markGridTableBody');
-      tbody.innerHTML = '';
-
-      // First calculate current scores array to compute ranks
-      let studentScores = filteredStudents.map(st => {
-        const scoreKey = `${st.id}_${subjectId}_${weekNum}`;
-        const prevKey = `${st.id}_${subjectId}_${weekNum - 1}`;
-        const currScore = localMarks[scoreKey] !== undefined ? localMarks[scoreKey] : 70;
-        const prevScore = localMarks[prevKey] !== undefined ? localMarks[prevKey] : currScore;
-        return { ...st, currScore, prevScore };
-      });
-
-      // Sort descending for rank
-      studentScores.sort((a, b) => b.currScore - a.currScore);
-
-      studentScores.forEach((st, idx) => {
-        const position = idx + 1;
-        const scoreDiff = st.currScore - st.prevScore;
-
-        let trendHtml = `<span class="text-slate-400 font-bold">-</span>`;
-        if (scoreDiff > 0) {
-          trendHtml = `<span class="text-emerald-400 font-bold flex items-center justify-center gap-1"><i class="fa-solid fa-arrow-up"></i> +${scoreDiff}</span>`;
-        } else if (scoreDiff < 0) {
-          trendHtml = `<span class="text-rose-400 font-bold flex items-center justify-center gap-1"><i class="fa-solid fa-arrow-down"></i> ${scoreDiff}</span>`;
-        }
-
-        // Grade calculation (Standard Primary Scale)
-        let grade = 'P1';
-        if (st.currScore >= 85) grade = 'P1 (Distinction)';
-        else if (st.currScore >= 75) grade = 'P2 (Distinction)';
-        else if (st.currScore >= 65) grade = 'C3 (Credit)';
-        else if (st.currScore >= 55) grade = 'C4 (Credit)';
-        else grade = 'P7 (Pass)';
-
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-800/40 transition";
-        tr.innerHTML = `
-          <td class="py-2.5 px-2 font-mono text-brand-100 font-bold">${st.student_code}</td>
-          <td class="py-2.5 px-2 font-medium text-white">${st.full_name}</td>
-          <td class="py-2.5 px-2 text-center">
-            <input type="number" min="0" max="100" value="${st.currScore}" 
-                   onchange="updateMarkVal(${st.id}, ${subjectId}, ${weekNum}, this.value)"
-                   class="w-20 bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-center text-xs font-bold text-amber-400 focus:outline-none focus:border-brand-500">
-          </td>
-          <td class="py-2.5 px-2 text-center font-bold text-slate-300">${grade}</td>
-          <td class="py-2.5 px-2 text-center font-bold text-white"><span class="w-6 h-6 rounded-full bg-slate-800 inline-flex items-center justify-center text-xs border border-slate-700">${position}</span></td>
-          <td class="py-2.5 px-2 text-center">${trendHtml}</td>
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-900/40 transition">
+            <td class="px-4 py-3 font-mono text-xs font-bold ${index === 0 ? 'text-amber-400' : 'text-slate-400'}">#${index + 1}</td>
+            <td class="px-4 py-3 font-mono text-xs text-indigo-300">${st.student_code}</td>
+            <td class="px-4 py-3 font-semibold text-white">${st.full_name}</td>
+            <td class="px-4 py-3 text-center font-bold text-slate-200">${score}/100</td>
+            <td class="px-4 py-3 text-center"><span class="px-2 py-0.5 rounded text-xs font-bold ${grade === 'A' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-indigo-500/20 text-indigo-300'}">${grade}</span></td>
+          </tr>
         `;
-        tbody.appendChild(tr);
       });
     }
 
-    function updateMarkVal(studentId, subjectId, weekNum, val) {
-      const key = `${studentId}_${subjectId}_${weekNum}`;
-      localMarks[key] = parseFloat(val) || 0;
-    }
+    // GENERATE AND PRINT CLASS POSITIONS PDF REPORT
+    function exportPositionsPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const selectedClass = document.getElementById('filterClassOverview').options[document.getElementById('filterClassOverview').selectedIndex].text;
 
-    function saveAllMarks() {
-      alert("Success! All weekly marks have been compiled, ranked, and synced to Supabase database.");
-      loadMarkEntryGrid();
-    }
+      doc.setFontSize(16);
+      doc.text("HOPE ACADEMY NURSERY & PRIMARY SCHOOL", 14, 15);
+      doc.setFontSize(11);
+      doc.text(`Weekly Assessment Summary & Positions - ${selectedClass}`, 14, 23);
 
-    // 6. ANALYTICS & LEADERBOARD
-    function renderLeaderboard() {
-      const container = document.getElementById('leaderboardCards');
-      container.innerHTML = '';
+      let listToRender = localStudents.filter(s => s.class_id === parseInt(document.getElementById('filterClassOverview').value));
+      listToRender.sort((a, b) => (b.score || 0) - (a.score || 0));
 
-      const p6Students = localStudents.filter(s => s.class_id === 2);
-      const top3 = p6Students.slice(0, 3);
+      const tableData = listToRender.map((st, index) => [
+        `#${index + 1}`,
+        st.student_code,
+        st.full_name,
+        `${st.score || 0} / 100`
+      ]);
 
-      const badges = [
-        { title: '1st Place', color: 'border-amber-400/50 bg-amber-400/10 text-amber-400', icon: 'fa-trophy' },
-        { title: '2nd Place', color: 'border-slate-300/50 bg-slate-300/10 text-slate-200', icon: 'fa-medal' },
-        { title: '3rd Place', color: 'border-amber-700/50 bg-amber-700/10 text-amber-600', icon: 'fa-award' }
-      ];
-
-      top3.forEach((st, idx) => {
-        const card = document.createElement('div');
-        card.className = `p-4 rounded-xl border ${badges[idx].color} space-y-2 relative overflow-hidden`;
-        card.innerHTML = `
-          <div class="flex justify-between items-center">
-            <span class="text-xs font-bold uppercase tracking-wider">${badges[idx].title}</span>
-            <i class="fa-solid ${badges[idx].icon} text-lg"></i>
-          </div>
-          <h4 class="font-heading font-bold text-base text-white">${st.full_name}</h4>
-          <p class="text-xs text-slate-300 font-mono">Aggregate Score: <b class="text-white">${94 - (idx * 5)}%</b></p>
-        `;
-        container.appendChild(card);
-      });
-    }
-
-    function initCharts() {
-      // Subject Chart
-      const ctx1 = document.getElementById('chartSubjectAverages').getContext('2d');
-      subjectChartInstance = new Chart(ctx1, {
-        type: 'bar',
-        data: {
-          labels: ['Mathematics', 'English', 'Science (SET)', 'Social Studies'],
-          datasets: [{
-            label: 'P6 Average %',
-            data: [82.5, 78.0, 85.4, 74.2],
-            backgroundColor: ['rgba(99, 102, 241, 0.7)', 'rgba(139, 92, 246, 0.7)', 'rgba(16, 185, 129, 0.7)', 'rgba(245, 158, 11, 0.7)'],
-            borderRadius: 8
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { min: 0, max: 100, ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
-            x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
-          }
-        }
+      doc.autoTable({
+        startY: 30,
+        head: [['Position', 'Student Code', 'Full Name', 'Total Score']],
+        body: tableData,
+        theme: 'grid',
+        headStyles: { fillColor: [49, 46, 129] }
       });
 
-      // Weekly Trend Chart
-      const ctx2 = document.getElementById('chartWeeklyTrends').getContext('2d');
-      trendChartInstance = new Chart(ctx2, {
-        type: 'line',
-        data: {
-          labels: ['Week 1', 'Week 2', 'Week 3 (Current)', 'Week 4 (Proj)'],
-          datasets: [{
-            label: 'Class Score Trend',
-            data: [72.1, 75.8, 78.4, 82.0],
-            borderColor: '#10b981',
-            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-            fill: true,
-            tension: 0.4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { min: 50, max: 100, ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
-            x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
-          }
-        }
-      });
+      doc.save(`Hope_Academy_Class_Positions_${selectedClass.replace(/\s+/g, '_')}.pdf`);
     }
   </script>
 </body>
