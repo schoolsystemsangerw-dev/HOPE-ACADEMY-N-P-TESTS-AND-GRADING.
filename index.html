@@ -287,22 +287,43 @@
         if (data && data.length > 0) {
           newStudentObj.id = data[0].id;
         }
-      } catch (err) {
-        console.warn("Saving to local state fallback:", err.message);
-      }
+    } catch (err) {
+    console.error("Error inserting student into Supabase:", err.message);
+    alert(`Failed to register student: ${err.message}`);
+    return;
+  }
 
-      localStudents.push(newStudentObj);
-      alert("Student saved to central roster!");
-      document.getElementById('addStudentForm').reset();
-      renderHeadTeacherOverview();
-    }
+  alert("Student successfully registered in Supabase!");
+  document.getElementById('addStudentForm').reset();
+  await renderHeadTeacherOverview();
+}
 
-    function renderHeadTeacherOverview() {
-      const selectedClass = parseInt(document.getElementById('filterClassOverview').value);
-      const tbody = document.getElementById('headTeacherOverviewTableBody');
-      tbody.innerHTML = '';
+async function renderHeadTeacherOverview() {
+  const selectedClass = parseInt(document.getElementById('filterClassOverview').value);
+  const tbody = document.getElementById('headTeacherOverviewTableBody');
+  tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4">Loading students from Supabase...</td></tr>';
 
-      let listToRender = localStudents.filter(s => s.class_id === selectedClass);
+  // Fetch directly from Supabase instead of local array
+  const { data: listToRender, error } = await _supabase
+    .from('students')
+    .select('*')
+    .eq('class_id', selectedClass);
+
+  if (error) {
+    console.error("Supabase overview error:", error.message);
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center text-red-400 p-4">Error loading data: ${error.message}</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = '';
+
+  if (!listToRender || listToRender.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4">No students found in Supabase for this class.</td></tr>';
+    return;
+  }
+
+  // Calculate totals and statistics
+  listToRender.forEach(st => {
 
       // Calculate totals and statistics
       listToRender.forEach(st => {
