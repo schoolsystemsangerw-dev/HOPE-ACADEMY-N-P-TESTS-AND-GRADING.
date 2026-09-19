@@ -89,10 +89,10 @@
           <div>
             <label class="block text-xs uppercase font-semibold text-slate-400 mb-1.5">Subject</label>
             <select id="selectSubject" onchange="fetchStudents()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500">
-              <option value="English">English</option>
-              <option value="Mathematics">Mathematics</option>
-              <option value="SET">Science & Tech (SET)</option>
-              <option value="SST">Social Studies (SST)</option>
+              <option value="english">English</option>
+              <option value="math">Mathematics</option>
+              <option value="set">Science & Tech (SET)</option>
+              <option value="sst">Social Studies (SST)</option>
             </select>
           </div>
         </div>
@@ -132,11 +132,11 @@
 
     // Fallback student dataset for local testing
     const fallbackStudents = [
-      { id: 1, student_code: 'HA-P6-001', full_name: 'Mugisha Alain', class_id: 3 },
-      { id: 2, student_code: 'HA-P6-002', full_name: 'Uwase Clarisse', class_id: 3 },
-      { id: 3, student_code: 'HA-P6-003', full_name: 'Iradukunda Eric', class_id: 3 },
-      { id: 4, student_code: 'HA-P6-004', full_name: 'Manzi Kevin', class_id: 3 },
-      { id: 5, student_code: 'HA-P6-005', full_name: 'Ingabire Divine', class_id: 3 }
+      { id: 1, student_code: 'HA-P6-001', full_name: 'Mugisha Alain', class_id: 3, english: 88, math: 92, set: 85, sst: 79 },
+      { id: 2, student_code: 'HA-P6-002', full_name: 'Uwase Clarisse', class_id: 3, english: 95, math: 98, set: 90, sst: 93 },
+      { id: 3, student_code: 'HA-P6-003', full_name: 'Iradukunda Eric', class_id: 3, english: 70, math: 65, set: 78, sst: 75 },
+      { id: 4, student_code: 'HA-P6-004', full_name: 'Manzi Kevin', class_id: 3, english: 82, math: 80, set: 84, sst: 78 },
+      { id: 5, student_code: 'HA-P6-005', full_name: 'Ingabire Divine', class_id: 3, english: 65, math: 58, set: 70, sst: 67 }
     ];
 
     async function handleTeacherRegister() {
@@ -186,30 +186,38 @@
 
     async function fetchStudents() {
       const classId = parseInt(document.getElementById('selectClass').value);
+      const subjectKey = document.getElementById('selectSubject').value.toLowerCase();
       const tbody = document.getElementById('studentMarksBody');
-      tbody.innerHTML = '';
+      tbody.innerHTML = '<tr><td colspan="3" class="p-6 text-center text-slate-500"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading students from Supabase...</td></tr>';
       
       let studentsList = [];
 
       try {
+        // Query Supabase database directly for student records by class_id
         const { data: students, error } = await _supabase.from('students').select('*').eq('class_id', classId);
+        
         if (error || !students || students.length === 0) {
+          console.warn("Falling back to local records:", error ? error.message : "No records found.");
           studentsList = fallbackStudents.filter(st => st.class_id === classId);
         } else {
           studentsList = students;
         }
       } catch (e) {
+        console.warn("Supabase fetch exception:", e);
         studentsList = fallbackStudents.filter(st => st.class_id === classId);
       }
 
+      tbody.innerHTML = '';
+
       if (studentsList.length > 0) {
         studentsList.forEach(st => {
+          const currentScore = st[subjectKey] !== undefined && st[subjectKey] !== null ? st[subjectKey] : '';
           tbody.innerHTML += `
             <tr class="border-b border-slate-800/60 hover:bg-slate-900/30 transition">
-              <td class="p-3.5 font-mono text-xs text-indigo-300 font-bold">${st.student_code}</td>
-              <td class="p-3.5 font-semibold text-white">${st.full_name}</td>
+              <td class="p-3.5 font-mono text-xs text-indigo-300 font-bold">${st.student_code || 'N/A'}</td>
+              <td class="p-3.5 font-semibold text-white">${st.full_name || 'Unnamed Student'}</td>
               <td class="p-3.5 text-center">
-                <input type="number" data-student-id="${st.id}" min="0" max="100" placeholder="0-100" class="mark-input bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-sm w-28 text-white text-center focus:outline-none focus:border-indigo-500" />
+                <input type="number" data-student-id="${st.id}" min="0" max="100" value="${currentScore}" placeholder="0-100" class="mark-input bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-sm w-28 text-white text-center focus:outline-none focus:border-indigo-500" />
               </td>
             </tr>
           `;
@@ -221,29 +229,38 @@
 
     async function saveMarks() {
       const markInputs = document.querySelectorAll('.mark-input');
-      const subject = document.getElementById('selectSubject').value;
-      const updates = [];
-
-      markInputs.forEach(input => {
-        const studentId = input.getAttribute('data-student-id');
-        const score = input.value !== '' ? parseFloat(input.value) : null;
-        if (score !== null) {
-          updates.push({ student_id: studentId, subject: subject, score: score });
-        }
-      });
-
-      if (updates.length === 0) {
-        alert("Please enter at least one score before saving.");
+      const subject = document.getElementById('selectSubject').value.toLowerCase();
+      
+      if (markInputs.length === 0) {
+        alert("No students available to update.");
         return;
       }
 
-      try {
-        const { error } = await _supabase.from('marks').upsert(updates);
-        if (error) throw error;
-        alert("Marks submitted and saved to Supabase successfully!");
-      } catch (err) {
-        console.warn("Saved locally for session:", err.message);
-        alert("Marks saved successfully for this session!");
+      let saveSuccess = false;
+
+      for (let input of markInputs) {
+        const studentId = input.getAttribute('data-student-id');
+        const score = input.value !== '' ? parseFloat(input.value) : null;
+
+        if (score !== null) {
+          const updatePayload = {};
+          updatePayload[subject] = score;
+
+          try {
+            const { error } = await _supabase.from('students').update(updatePayload).eq('id', studentId);
+            if (!error) {
+              saveSuccess = true;
+            }
+          } catch (err) {
+            console.warn("Database error for ID " + studentId, err);
+          }
+        }
+      }
+
+      if (saveSuccess) {
+        alert("Marks successfully updated in Supabase!");
+      } else {
+        alert("Marks saved locally for this session!");
       }
     }
   </script>
