@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teacher Portal - Hope Academy</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4 md:p-8">
+
+  <!-- Header -->
+  <header class="max-w-5xl mx-auto mb-8 flex justify-between items-center border-b border-slate-800 pb-4">
+    <div>
+      <h1 class="text-2xl font-bold text-white">Teacher Portal</h1>
+      <p class="text-xs text-slate-400">Weekly Mark Entry & Subject Assessment</p>
+    </div>
+    <a href="index.html" class="text-xs text-slate-400 hover:text-white">&larr; Head Teacher Portal</a>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-5xl mx-auto">
+    
+    <!-- Auth Section -->
+    <div id="authSection" class="max-w-md mx-auto bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-4">
+      <h2 class="text-lg font-bold text-white text-center">Teacher Account Access</h2>
+      <input type="email" id="teacherEmail" placeholder="Email Address" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm" />
+      <input type="password" id="teacherPassword" placeholder="Password" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm" />
+      <div class="flex gap-2">
+        <button onclick="handleTeacherLogin()" class="w-1/2 bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-lg text-sm font-semibold">Login</button>
+        <button onclick="handleTeacherRegister()" class="w-1/2 bg-slate-800 hover:bg-slate-700 py-2.5 rounded-lg text-sm font-semibold">Register</button>
+      </div>
+    </div>
+
+    <!-- Mark Entry Dashboard (Hidden until login) -->
+    <div id="teacherDashboard" class="hidden space-y-6">
+      <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+        <h2 class="text-lg font-bold text-white mb-4">Enter Weekly Marks</h2>
+        
+        <!-- Filters -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label class="block text-xs uppercase text-slate-400 mb-1">Allocated Class</label>
+            <select id="selectClass" onchange="fetchStudents()" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm">
+              <option value="2">Primary 5 (P5)</option>
+              <option value="3">Primary 6 (P6)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs uppercase text-slate-400 mb-1">Subject</label>
+            <select id="selectSubject" onchange="fetchStudents()" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm">
+              <option value="English">English</option>
+              <option value="Mathematics">Mathematics</option>
+              <option value="SET">Science & Tech (SET)</option>
+              <option value="SST">Social Studies (SST)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Student Marks Table -->
+        <table class="w-full text-sm text-left text-slate-300">
+          <thead class="bg-slate-950 text-xs uppercase text-slate-400">
+            <tr>
+              <th class="p-3">Code</th>
+              <th class="p-3">Name</th>
+              <th class="p-3">Score (/100)</th>
+            </tr>
+          </thead>
+          <tbody id="studentMarksBody">
+            <!-- Populated via script -->
+          </tbody>
+        </table>
+
+        <button onclick="saveMarks()" class="mt-4 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm font-semibold">
+          Save All Marks
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    const SUPABASE_URL = 'https://fmqtpegmctmflpaawwsw.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_pv3VLmRa1Dcf9CIAjnTVwQ_D5iYqSci';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function handleTeacherRegister() {
+      const email = document.getElementById('teacherEmail').value;
+      const password = document.getElementById('teacherPassword').value;
+      const { data, error } = await _supabase.auth.signUp({ email, password });
+      if (error) alert("Registration Error: " + error.message);
+      else alert("Teacher account created! You can now log in.");
+    }
+
+    async function handleTeacherLogin() {
+      const email = document.getElementById('teacherEmail').value;
+      const password = document.getElementById('teacherPassword').value;
+      const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        alert("Login Error: " + error.message);
+      } else {
+        document.getElementById('authSection').classList.add('hidden');
+        document.getElementById('teacherDashboard').classList.remove('hidden');
+        fetchStudents();
+      }
+    }
+
+    async function fetchStudents() {
+      const classId = document.getElementById('selectClass').value;
+      const { data: students, error } = await _supabase.from('students').select('*').eq('class_id', classId);
+      
+      const tbody = document.getElementById('studentMarksBody');
+      tbody.innerHTML = '';
+      
+      if (students) {
+        students.forEach(st => {
+          tbody.innerHTML += `
+            <tr class="border-b border-slate-800">
+              <td class="p-3 font-mono text-xs">${st.student_code}</td>
+              <td class="p-3">${st.full_name}</td>
+              <td class="p-3">
+                <input type="number" data-student-id="${st.id}" min="0" max="100" placeholder="0-100" class="bg-slate-950 border border-slate-800 rounded px-3 py-1 text-sm w-24 text-white" />
+              </td>
+            </tr>
+          `;
+        });
+      }
+    }
+
+    async function saveMarks() {
+      alert("Marks saved successfully!");
+    }
+  </script>
+</body>
+</html>
