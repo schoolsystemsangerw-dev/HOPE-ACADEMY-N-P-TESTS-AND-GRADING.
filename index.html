@@ -282,8 +282,11 @@
       };
 
       try {
-        const { data, error } = await _supabase.from('students').insert([{ student_code: studentCode, full_name: fullName, class_id: classId }]);
+        const { data, error } = await _supabase.from('students').insert([{ student_code: studentCode, full_name: fullName, class_id: classId }]).select();
         if (error) throw error;
+        if (data && data.length > 0) {
+          newStudentObj.id = data[0].id;
+        }
       } catch (err) {
         console.warn("Saving to local state fallback:", err.message);
       }
@@ -397,7 +400,7 @@
       }
     }
 
-    function deleteStudent(id) {
+    async function deleteStudent(id) {
       if (!isHeadTeacher) {
         alert("Authentication Required: Only Head Teacher NTEGEREJIMANA JEREMIE can edit or delete students.");
         openLoginModal();
@@ -405,6 +408,13 @@
       }
 
       if (confirm("Are you sure you want to delete this student from the central roster?")) {
+        try {
+          const { error } = await _supabase.from('students').delete().eq('id', id);
+          if (error) throw error;
+        } catch (err) {
+          console.warn("Supabase deletion error / fallback:", err.message);
+        }
+
         localStudents = localStudents.filter(s => s.id !== id);
         alert("Student removed from database.");
         renderHeadTeacherOverview();
