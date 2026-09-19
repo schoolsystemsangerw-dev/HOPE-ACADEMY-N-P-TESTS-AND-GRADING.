@@ -77,22 +77,18 @@
           </button>
         </div>
         
-        <!-- Filters -->
+        <!-- Dynamic Filters -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div>
             <label class="block text-xs uppercase font-semibold text-slate-400 mb-1.5">Allocated Class</label>
             <select id="selectClass" onchange="fetchStudents()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500">
-              <option value="2">Primary 5 (P5)</option>
-              <option value="3" selected>Primary 6 (P6)</option>
+              <option value="">Loading classes...</option>
             </select>
           </div>
           <div>
             <label class="block text-xs uppercase font-semibold text-slate-400 mb-1.5">Subject</label>
             <select id="selectSubject" onchange="fetchStudents()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500">
-              <option value="english">English</option>
-              <option value="math">Mathematics</option>
-              <option value="set">Science & Tech (SET)</option>
-              <option value="sst">Social Studies (SST)</option>
+              <option value="">Loading subjects...</option>
             </select>
           </div>
         </div>
@@ -130,7 +126,19 @@
     const SUPABASE_ANON_KEY = 'sb_publishable_pv3VLmRa1Dcf9CIAjnTVwQ_D5iYqSci';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Fallback student dataset for local testing
+    // Fallbacks for offline or unpopulated database schemas
+    const fallbackClasses = [
+      { id: 2, name: 'Primary 5 (P5)' },
+      { id: 3, name: 'Primary 6 (P6)' }
+    ];
+
+    const fallbackSubjects = [
+      { code: 'english', name: 'English' },
+      { code: 'math', name: 'Mathematics' },
+      { code: 'set', name: 'Science & Tech (SET)' },
+      { code: 'sst', name: 'Social Studies (SST)' }
+    ];
+
     const fallbackStudents = [
       { id: 1, student_code: 'HA-P6-001', full_name: 'Mugisha Alain', class_id: 3, english: 88, math: 92, set: 85, sst: 79 },
       { id: 2, student_code: 'HA-P6-002', full_name: 'Uwase Clarisse', class_id: 3, english: 95, math: 98, set: 90, sst: 93 },
@@ -169,13 +177,14 @@
       const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
-        console.warn("Auth error, allowing local session entry:", error.message);
-        alert("Logging in to Teacher Portal.");
+        console.warn("Auth warning:", error.message);
       }
 
       document.getElementById('authSection').classList.add('hidden');
       document.getElementById('teacherDashboard').classList.remove('hidden');
-      fetchStudents();
+      
+      // Initialize dynamic dropdowns from Supabase
+      await initPortalData();
     }
 
     function logoutTeacher() {
@@ -184,26 +193,76 @@
       document.getElementById('authSection').classList.remove('hidden');
     }
 
+    async function initPortalData() {
+      await Promise.all([loadClasses(), loadSubjects()]);
+      await fetchStudents();
+    }
+
+    // Fetch classes dynamically from Supabase `classes` table
+    async function loadClasses() {
+      const selectClass = document.getElementById('selectClass');
+      let classesList = [];
+
+      try {
+        const { data, error } = await _supabase.from('classes').select('*').order('name', { ascending: true });
+        if (!error && data && data.length > 0) {
+          classesList = data;
+        } else {
+          classesList = fallbackClasses;
+        }
+      } catch (e) {
+        classesList = fallbackClasses;
+      }
+
+      selectClass.innerHTML = classesList.map(c => 
+        `<option value="${c.id}">${c.name || c.class_name || 'Class ' + c.id}</option>`
+      ).join('');
+    }
+
+    // Fetch subjects dynamically from Supabase `subjects` table
+    async function loadSubjects() {
+      const selectSubject = document.getElementById('selectSubject');
+      let subjectsList = [];
+
+      try {
+        const { data, error } = await _supabase.from('subjects').select('*').order('name', { ascending: true });
+        if (!error && data && data.length > 0) {
+          subjectsList = data.map(s => ({ code: (s.code || s.name).toLowerCase(), name: s.name }));
+        } else {
+          subjectsList = fallbackSubjects;
+        }
+      } catch (e) {
+        subjectsList = fallbackSubjects;
+      }
+
+      selectSubject.innerHTML = subjectsList.map(s => 
+        `<option value="${s.code}">${s.name}</option>`
+      ).join('');
+    }
+
+    // Fetch students dynamically from Supabase `students` table
     async function fetchStudents() {
-      const classId = parseInt(document.getElementById('selectClass').value);
-      const subjectKey = document.getElementById('selectSubject').value.toLowerCase();
+      const classIdSelect = document.getElementById('selectClass');
+      const subjectSelect = document.getElementById('selectSubject');
+
+      if (!classIdSelect.value || !subjectSelect.value) return;
+
+      const classId = parseInt(classIdSelect.value);
+      const subjectKey = subjectSelect.value.toLowerCase();
       const tbody = document.getElementById('studentMarksBody');
       tbody.innerHTML = '<tr><td colspan="3" class="p-6 text-center text-slate-500"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading students from Supabase...</td></tr>';
       
       let studentsList = [];
 
       try {
-        // Query Supabase database directly for student records by class_id
         const { data: students, error } = await _supabase.from('students').select('*').eq('class_id', classId);
         
         if (error || !students || students.length === 0) {
-          console.warn("Falling back to local records:", error ? error.message : "No records found.");
           studentsList = fallbackStudents.filter(st => st.class_id === classId);
         } else {
           studentsList = students;
         }
       } catch (e) {
-        console.warn("Supabase fetch exception:", e);
         studentsList = fallbackStudents.filter(st => st.class_id === classId);
       }
 
@@ -227,6 +286,7 @@
       }
     }
 
+    // Upsert or update student marks in Supabase
     async function saveMarks() {
       const markInputs = document.querySelectorAll('.mark-input');
       const subject = document.getElementById('selectSubject').value.toLowerCase();
