@@ -725,7 +725,7 @@
       const password = document.getElementById('regPassword').value;
 
       try {
-        const { data, error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await _supabase.auth.signUp({ email, password });
         if (error) throw error;
         alert("Registration Successful! Welcome to Hope Academy.");
         currentUser = { name: fullName, role: 'Teacher', email: email };
