@@ -223,15 +223,7 @@
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let isHeadTeacher = false;
-
-    // Initial Roster State with full subject marks
-    let localStudents = [
-      { id: 1, student_code: 'HA-P6-001', full_name: 'Mugisha Alain', class_id: 3, english: 88, math: 92, set: 85, sst: 79 },
-      { id: 2, student_code: 'HA-P6-002', full_name: 'Uwase Clarisse', class_id: 3, english: 95, math: 98, set: 90, sst: 93 },
-      { id: 3, student_code: 'HA-P6-003', full_name: 'Iradukunda Eric', class_id: 3, english: 70, math: 65, set: 78, sst: 75 },
-      { id: 4, student_code: 'HA-P6-004', full_name: 'Manzi Kevin', class_id: 3, english: 82, math: 80, set: 84, sst: 78 },
-      { id: 5, student_code: 'HA-P6-005', full_name: 'Ingabire Divine', class_id: 3, english: 65, math: 58, set: 70, sst: 67 }
-    ];
+    let fetchedStudents = [];
 
     document.addEventListener('DOMContentLoaded', () => {
       renderHeadTeacherOverview();
@@ -270,62 +262,51 @@
       const fullName = document.getElementById('newStudentName').value.trim();
       const classId = parseInt(document.getElementById('newStudentClass').value);
 
-      const newStudentObj = {
-        id: Date.now(),
-        student_code: studentCode,
-        full_name: fullName,
-        class_id: classId,
-        english: 0,
-        math: 0,
-        set: 0,
-        sst: 0
-      };
-
       try {
-        const { data, error } = await _supabase.from('students').insert([{ student_code: studentCode, full_name: fullName, class_id: classId }]).select();
+        const { error } = await _supabase.from('students').insert([{
+          student_code: studentCode,
+          full_name: fullName,
+          class_id: classId,
+          english: 0,
+          math: 0,
+          set: 0,
+          sst: 0
+        }]);
+
         if (error) throw error;
-        if (data && data.length > 0) {
-          newStudentObj.id = data[0].id;
-        }
-    } catch (err) {
-    console.error("Error inserting student into Supabase:", err.message);
-    alert(`Failed to register student: ${err.message}`);
-    return;
-  }
 
-  alert("Student successfully registered in Supabase!");
-  document.getElementById('addStudentForm').reset();
-  await renderHeadTeacherOverview();
-}
+        alert("Student successfully registered in Supabase!");
+        document.getElementById('addStudentForm').reset();
+        await renderHeadTeacherOverview();
+      } catch (err) {
+        console.error("Error inserting student into Supabase:", err.message);
+        alert(`Failed to register student: ${err.message}`);
+      }
+    }
 
-async function renderHeadTeacherOverview() {
-  const selectedClass = parseInt(document.getElementById('filterClassOverview').value);
-  const tbody = document.getElementById('headTeacherOverviewTableBody');
-  tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4">Loading students from Supabase...</td></tr>';
+    async function renderHeadTeacherOverview() {
+      const selectedClass = parseInt(document.getElementById('filterClassOverview').value);
+      const tbody = document.getElementById('headTeacherOverviewTableBody');
+      tbody.innerHTML = '<tr><td colspan="13" class="text-center p-4 text-slate-400"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading students from Supabase...</td></tr>';
 
-  // Fetch directly from Supabase instead of local array
-  const { data: listToRender, error } = await _supabase
-    .from('students')
-    .select('*')
-    .eq('class_id', selectedClass);
+      const { data: listToRender, error } = await _supabase
+        .from('students')
+        .select('*')
+        .eq('class_id', selectedClass);
 
-  if (error) {
-    console.error("Supabase overview error:", error.message);
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center text-red-400 p-4">Error loading data: ${error.message}</td></tr>`;
-    return;
-  }
+      if (error) {
+        console.error("Supabase overview error:", error.message);
+        tbody.innerHTML = `<tr><td colspan="13" class="text-center text-red-400 p-4">Error loading data: ${error.message}</td></tr>`;
+        return;
+      }
 
-  tbody.innerHTML = '';
+      if (!listToRender || listToRender.length === 0) {
+        fetchedStudents = [];
+        tbody.innerHTML = '<tr><td colspan="13" class="text-center py-6 text-slate-500">No students registered in this class.</td></tr>';
+        return;
+      }
 
-  if (!listToRender || listToRender.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4">No students found in Supabase for this class.</td></tr>';
-    return;
-  }
-
-  // Calculate totals and statistics
-  listToRender.forEach(st => {
-
-      // Calculate totals and statistics
+      // Calculate totals, percentages, grades, and high/low subjects
       listToRender.forEach(st => {
         st.total = (st.english || 0) + (st.math || 0) + (st.set || 0) + (st.sst || 0);
         st.percentage = ((st.total / 400) * 100).toFixed(1);
@@ -347,14 +328,11 @@ async function renderHeadTeacherOverview() {
         else st.grade = 'D';
       });
 
-      // Rank students by total mark descending
+      // Rank students descending by total marks
       listToRender.sort((a, b) => b.total - a.total);
+      fetchedStudents = listToRender;
 
-      if (listToRender.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="13" class="text-center py-6 text-slate-500">No students registered in this class.</td></tr>`;
-        return;
-      }
-
+      tbody.innerHTML = '';
       listToRender.forEach((st, index) => {
         tbody.innerHTML += `
           <tr class="hover:bg-slate-900/50 transition">
@@ -379,18 +357,27 @@ async function renderHeadTeacherOverview() {
       });
     }
 
-    function openEditModal(id) {
+    async function openEditModal(id) {
       if (!isHeadTeacher) {
         alert("Authentication Required: Only Head Teacher NTEGEREJIMANA JEREMIE can edit or delete students.");
         openLoginModal();
         return;
       }
-      const student = localStudents.find(s => s.id === id);
-      if (!student) return;
+
+      const { data: student, error } = await _supabase
+        .from('students')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error || !student) {
+        alert("Unable to fetch student details from Supabase.");
+        return;
+      }
 
       document.getElementById('editStudentId').value = student.id;
-      document.getElementById('editStudentCode').value = student.student_code;
-      document.getElementById('editStudentName').value = student.full_name;
+      document.getElementById('editStudentCode').value = student.student_code || '';
+      document.getElementById('editStudentName').value = student.full_name || '';
       document.getElementById('editEnglish').value = student.english || 0;
       document.getElementById('editMath').value = student.math || 0;
       document.getElementById('editSET').value = student.set || 0;
@@ -403,21 +390,29 @@ async function renderHeadTeacherOverview() {
       document.getElementById('editStudentModal').classList.add('hidden');
     }
 
-    function saveStudentEdits() {
+    async function saveStudentEdits() {
       const id = parseInt(document.getElementById('editStudentId').value);
-      const student = localStudents.find(s => s.id === id);
+      const student_code = document.getElementById('editStudentCode').value.trim();
+      const full_name = document.getElementById('editStudentName').value.trim();
+      const english = parseFloat(document.getElementById('editEnglish').value) || 0;
+      const math = parseFloat(document.getElementById('editMath').value) || 0;
+      const set = parseFloat(document.getElementById('editSET').value) || 0;
+      const sst = parseFloat(document.getElementById('editSST').value) || 0;
 
-      if (student) {
-        student.student_code = document.getElementById('editStudentCode').value.trim();
-        student.full_name = document.getElementById('editStudentName').value.trim();
-        student.english = parseFloat(document.getElementById('editEnglish').value) || 0;
-        student.math = parseFloat(document.getElementById('editMath').value) || 0;
-        student.set = parseFloat(document.getElementById('editSET').value) || 0;
-        student.sst = parseFloat(document.getElementById('editSST').value) || 0;
+      try {
+        const { error } = await _supabase
+          .from('students')
+          .update({ student_code, full_name, english, math, set, sst })
+          .eq('id', id);
 
-        alert("Student records updated successfully!");
+        if (error) throw error;
+
+        alert("Student records updated successfully in Supabase!");
         closeEditModal();
         renderHeadTeacherOverview();
+      } catch (err) {
+        console.error("Error updating student in Supabase:", err.message);
+        alert(`Failed to update student: ${err.message}`);
       }
     }
 
@@ -432,17 +427,22 @@ async function renderHeadTeacherOverview() {
         try {
           const { error } = await _supabase.from('students').delete().eq('id', id);
           if (error) throw error;
-        } catch (err) {
-          console.warn("Supabase deletion error / fallback:", err.message);
-        }
 
-        localStudents = localStudents.filter(s => s.id !== id);
-        alert("Student removed from database.");
-        renderHeadTeacherOverview();
+          alert("Student removed from database.");
+          renderHeadTeacherOverview();
+        } catch (err) {
+          console.error("Supabase deletion error:", err.message);
+          alert(`Failed to delete student: ${err.message}`);
+        }
       }
     }
 
     function exportPositionsPDF() {
+      if (!fetchedStudents || fetchedStudents.length === 0) {
+        alert("No student data available to export.");
+        return;
+      }
+
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('landscape');
       const selectedClass = document.getElementById('filterClassOverview').options[document.getElementById('filterClassOverview').selectedIndex].text;
@@ -453,10 +453,7 @@ async function renderHeadTeacherOverview() {
       doc.text(`Weekly Performance Summary & Student Rankings - ${selectedClass}`, 14, 22);
       doc.text(`Head Teacher: NTEGEREJIMANA JEREMIE | Date: ${new Date().toLocaleDateString()}`, 14, 28);
 
-      let listToRender = localStudents.filter(s => s.class_id === parseInt(document.getElementById('filterClassOverview').value));
-      listToRender.sort((a, b) => (b.total || 0) - (a.total || 0));
-
-      const tableData = listToRender.map((st, index) => [
+      const tableData = fetchedStudents.map((st, index) => [
         `#${index + 1}`,
         st.student_code,
         st.full_name,
